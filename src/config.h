@@ -40,21 +40,21 @@ extern "C"
 #include "port.h"
 
 // Constants
-#define UART_READ_TIMEOUT_MS 3000
+#define UART_READ_TIMEOUT_MS 100
 #define UART_WRITE_TIMEOUT_MS 10
 
-#define API_FRAME_DEBUG_PRINT_ENABLED 0
+#define API_FRAME_DEBUG_PRINT_ENABLED 1
 #if API_FRAME_DEBUG_PRINT_ENABLED
 #define APIFrameDebugPrint(...) portDebugPrintf(__VA_ARGS__)
 #else
 #define APIFrameDebugPrint(...)
 #endif
 
-#define XBEE_DEBUG_PRINT_ENABLED 0
+#define XBEE_DEBUG_PRINT_ENABLED 1
 #if XBEE_DEBUG_PRINT_ENABLED
-#define XBEEDebugPrintEnabled(...) portDebugPrintf(__VA_ARGS__)
+#define XBEEDebugPrint(...) portDebugPrintf(__VA_ARGS__)
 #else
-#define XBEEDebugPrintEnabled(...)
+#define XBEEDebugPrint(...)
 #endif
 
 #if defined(__cplusplus)
