@@ -137,7 +137,7 @@ void setup() {
     }
 
     // Read LoRaWAN DevEUI and print
-    uint8_t devEui[17];
+    char devEui[17];
 
     // This might take a few trys ... 
     bool status = false; 
