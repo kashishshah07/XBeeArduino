@@ -6,8 +6,8 @@
  * It includes methods for initializing, sending join requests, and handling other
  * operations unique to the XBee LR subclass.
  * 
- * @version 1.0
- * @date 2024-08-08
+ * @version 1.1
+ * @date 2025-03-05
  * 
  * @license MIT
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -253,12 +253,24 @@ void XBeeLRHardReset(XBee* self) {
 bool XBeeLRSetAppEUI(XBee* self, const char* value) {
     uint8_t response[17];
     uint8_t responseLength;
-    uint8_t paramLength = (value != NULL) ? strlen(value) : 0;
-    int status = apiSendAtCommandAndGetResponse(self, AT_AE, value, paramLength, response, &responseLength, 5000);
-    if(status != API_SEND_SUCCESS){
-        XBEEDebugPrint("Failed to set App EUI\n");
+    uint8_t param[8];
+    
+    if (!value || strlen(value) != 16) {
+        XBEEDebugPrint("Invalid App EUI length\n");
+        return false;
     }
-    return status;
+    
+    if (asciiToHexArray(value, param, sizeof(param)) < 0) {
+        XBEEDebugPrint("Failed to convert App EUI\n");
+        return false;
+    }
+    
+    int status = apiSendAtCommandAndGetResponse(self, AT_AE, param, sizeof(param), response, &responseLength, 5000);
+    if (status != API_SEND_SUCCESS) {
+        XBEEDebugPrint("Failed to set App EUI\n");
+        return false;
+    }
+    return true;
 }
 
 /**
@@ -277,12 +289,24 @@ bool XBeeLRSetAppEUI(XBee* self, const char* value) {
 bool XBeeLRSetAppKey(XBee* self, const char* value) {
     uint8_t response[33];
     uint8_t responseLength;
-    uint8_t paramLength = (value != NULL) ? strlen(value) : 0;
-    int status = apiSendAtCommandAndGetResponse(self, AT_AK, value, paramLength, response, &responseLength, 5000);
-    if(status != API_SEND_SUCCESS){
-        XBEEDebugPrint("Failed to set App Key\n");
+    uint8_t param[16];
+    
+    if (!value || strlen(value) != 32) {
+        XBEEDebugPrint("Invalid App Key length\n");
+        return false;
     }
-    return status;
+    
+    if (asciiToHexArray(value, param, sizeof(param)) < 0) {
+        XBEEDebugPrint("Failed to convert App Key\n");
+        return false;
+    }
+    
+    int status = apiSendAtCommandAndGetResponse(self, AT_AK, param, sizeof(param), response, &responseLength, 5000);
+    if (status != API_SEND_SUCCESS) {
+        XBEEDebugPrint("Failed to set App Key\n");
+        return false;
+    }
+    return true;
 }
 
 /**
@@ -302,12 +326,24 @@ bool XBeeLRSetAppKey(XBee* self, const char* value) {
 bool XBeeLRSetNwkKey(XBee* self, const char* value) {
     uint8_t response[33];
     uint8_t responseLength;
-    uint8_t paramLength = (value != NULL) ? strlen(value) : 0;
-    int status = apiSendAtCommandAndGetResponse(self, AT_NK, value, paramLength, response, &responseLength, 5000);
-    if(status != API_SEND_SUCCESS){
-        XBEEDebugPrint("Failed to set Nwk Key\n");
+    uint8_t param[16];
+    
+    if (!value || strlen(value) != 32) {
+        XBEEDebugPrint("Invalid Nwk Key length\n");
+        return false;
     }
-    return status;
+    
+    if (asciiToHexArray(value, param, sizeof(param)) < 0) {
+        XBEEDebugPrint("Failed to convert Nwk Key\n");
+        return false;
+    }
+    
+    int status = apiSendAtCommandAndGetResponse(self, AT_NK, param, sizeof(param), response, &responseLength, 5000);
+    if (status != API_SEND_SUCCESS) {
+        XBEEDebugPrint("Failed to set Nwk Key\n");
+        return false;
+    }
+    return true;
 }
 
 /**
@@ -627,6 +663,7 @@ bool XBeeLRSetTransmitPower(XBee* self, const uint8_t value) {
 
     return true;
 }
+
 /**
  * @brief Sends the AT_DE command to read the LoRaWAN DevEUI from the XBee LR module.
  * 
@@ -642,22 +679,29 @@ bool XBeeLRSetTransmitPower(XBee* self, const uint8_t value) {
  * 
  * @return bool Returns true if the DevEUI was successfully retrieved, otherwise false.
  */
-bool XBeeLRGetDevEUI(XBee* self, uint8_t* responseBuffer, uint8_t buffer_size) {
-    // Clear buffer
-    if(buffer_size < 17){
+bool XBeeLRGetDevEUI(XBee* self, char* responseBuffer, uint8_t buffer_size) {
+    // Ensure buffer is large enough to hold DevEUI (16 ASCII characters + null terminator)
+    if (buffer_size < 17) {
         return false;
     }
-    memset(responseBuffer,0,buffer_size);
+    memset(responseBuffer, 0, buffer_size);
 
     // Send the AT_DE command to query the DevEUI
+    uint8_t rawResponse[8]; // DevEUI is 8 bytes in binary
     uint8_t responseLength;
-    int status = apiSendAtCommandAndGetResponse(self, AT_DE, NULL, 0, responseBuffer, &responseLength, 5000);
+    int status = apiSendAtCommandAndGetResponse(self, AT_DE, NULL, 0, rawResponse, &responseLength, 5000);
 
-    if (status != API_SEND_SUCCESS) {
-        XBEEDebugPrint("Failed to receive AT_DE response, error code: %d\n", status);
+    if (status != API_SEND_SUCCESS || responseLength != 8) {
+        XBEEDebugPrint("Failed to receive valid AT_DE response, error code: %d\n", status);
         return false;
     }
-    return true;  
+
+    // Convert binary DevEUI to ASCII string representation
+    for (int i = 0; i < 8; i++) {
+        snprintf(&responseBuffer[i * 2], 3, "%02X", rawResponse[i]);
+    }
+
+    return true;
 }
 
 
@@ -676,13 +720,27 @@ bool XBeeLRGetDevEUI(XBee* self, uint8_t* responseBuffer, uint8_t buffer_size) {
 bool XBeeLRSetChannelsMask(XBee* self, const char* value) {
     uint8_t response[33];
     uint8_t responseLength;
-    uint8_t paramLength = (value != NULL) ? strlen(value) : 0;
-    int status = apiSendAtCommandAndGetResponse(self, AT_CM, (const uint8_t*)value, paramLength, response, &responseLength, 5000);
-    if(status != API_SEND_SUCCESS){
-        XBEEDebugPrint("Failed to set Channels Mask\n");
+    uint8_t param[16]; // Maximum LoRaWAN channel mask size
+    size_t paramLength = strlen(value) / 2;
+    
+    if (!value || strlen(value) % 2 != 0 || paramLength > sizeof(param)) {
+        XBEEDebugPrint("Invalid Channels Mask length\n");
+        return false;
     }
-    return status;
+    
+    if (asciiToHexArray(value, param, paramLength) < 0) {
+        XBEEDebugPrint("Failed to convert Channels Mask\n");
+        return false;
+    }
+    
+    int status = apiSendAtCommandAndGetResponse(self, AT_CM, param, paramLength, response, &responseLength, 5000);
+    if (status != API_SEND_SUCCESS) {
+        XBEEDebugPrint("Failed to set Channels Mask\n");
+        return false;
+    }
+    return true;
 }
+
 
 // XBeeLR private functions
 
