@@ -129,7 +129,7 @@ public:
      * @param devEUI A pointer to a buffer where the DevEUI will be stored.
      * @return True if the DevEUI is retrieved successfully, otherwise false.
      */
-    bool getLoRaWANDevEUI(uint8_t* devEUI, uint8_t length);
+    bool getLoRaWANDevEUI(char* devEUI, uint8_t length);
 
     /**
      * @brief Sets the App EUI of the LoRaWAN XBee module.

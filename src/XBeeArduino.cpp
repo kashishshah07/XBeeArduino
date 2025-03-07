@@ -241,7 +241,7 @@ bool XBeeArduino::setLoRaWANNwkKey(const char* value) {
  * @param devEUI A pointer to a buffer where the DevEUI will be stored.
  * @return True if the DevEUI is retrieved successfully, otherwise false.
  */
-bool XBeeArduino::getLoRaWANDevEUI(uint8_t* devEUI, uint8_t length) {
+bool XBeeArduino::getLoRaWANDevEUI(char* devEUI, uint8_t length) {
     if (moduleType_ == XBEE_LORA) {
         return XBeeLRGetDevEUI(xbee_, devEUI, length);
     }
